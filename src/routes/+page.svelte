@@ -3,10 +3,11 @@
 	import { Badge } from '$lib/components/ui/badge';
 	import { Separator } from '$lib/components/ui/separator';
 	import { MessageCircle, ExternalLink } from '@lucide/svelte';
+	import { buildWhatsAppUrl } from '$lib/config';
 
-  const whatsappUrl =
-		'https://wa.me/971585905881?text=' +
-		encodeURIComponent("Hi! I'd like to book a personal training session. Are you available?");
+	const whatsappUrl = buildWhatsAppUrl(
+		"Hi! I'd like to book a personal training session. Are you available?"
+	);
 </script>
 
 <div class="mx-auto max-w-5xl px-4 py-8 space-y-4">

@@ -15,6 +15,7 @@
 		DialogTitle
 	} from '$lib/components/ui/dialog';
 	import { Button } from '$lib/components/ui/button';
+	import { buildWhatsAppUrl } from '$lib/config';
 
 	// ========== Type definitions ==========
 	type AvailabilityEvent = {
@@ -47,7 +48,6 @@
 	const WORK_END_HOUR = 15; // 3:00 PM
 	const SLOT_DURATION_MINUTES = 60;
 
-	const WHATSAPP_PHONE = '971585905881';
 	const THEME_QUERY = '(prefers-color-scheme: dark)';
 
 	// ========== State ==========
@@ -140,12 +140,12 @@
 	}
 
 	// ========== Slot request handling ==========
-	function buildWhatsAppUrl(start: Temporal.ZonedDateTime, end: Temporal.ZonedDateTime): string {
+	function buildSessionRequestUrl(start: Temporal.ZonedDateTime, end: Temporal.ZonedDateTime): string {
 		const date = start.toPlainDate().toString();
 		const msg = `Hi! I'd like to request a PT session on ${date}, ${format12h(start)}–${format12h(
 			end
 		)} (Dubai time). Is this slot available?`;
-		return `https://wa.me/${WHATSAPP_PHONE}?text=${encodeURIComponent(msg)}`;
+		return buildWhatsAppUrl(msg);
 	}
 
 	function requestSlotAt(zdt: Temporal.ZonedDateTime): void {
@@ -170,7 +170,7 @@
 		pendingSlot = {
 			start: slotStart,
 			end: slotEnd,
-			waUrl: buildWhatsAppUrl(slotStart, slotEnd)
+			waUrl: buildSessionRequestUrl(slotStart, slotEnd)
 		};
 		confirmOpen = true;
 	}
