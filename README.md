@@ -1,42 +1,42 @@
-# sv
+# m.lnd_ — Availability Calendar
 
-Everything you need to build a Svelte project, powered by [`sv`](https://github.com/sveltejs/cli).
+A mobile-friendly availability calendar for personal training sessions.
 
-## Creating a project
+It shows unavailable time, clearly communicates working hours, and lets visitors request a session via WhatsApp by tapping an empty slot.
 
-If you're seeing this, you've probably already done this step. Congrats!
+**Live demo:** https://mlnd-cal.vercel.app/
 
-```sh
-# create a new project
-npx sv create my-app
-```
+---
 
-To recreate this project with the same configuration:
+## Tech stack
 
-```sh
-# recreate this project
-npx sv create --template minimal --types ts --add prettier eslint tailwindcss="plugins:typography" --install npm mlnd-cal
-```
+- **SvelteKit**
+- **Schedule-X** (calendar)
+- **shadcn/ui (Svelte)**
+- **Tailwind CSS**
+- **Vercel** (hosting)
 
-## Developing
+---
 
-Once you've created a project and installed dependencies with `npm install` (or `pnpm install` or `yarn`), start a development server:
+## How it works
 
-```sh
+- Busy / unavailable time is rendered on a weekly calendar
+- Empty slots can be tapped to request a session
+- Requests are sent via WhatsApp with a prefilled message
+- There is no booking logic yet (read-only MVP)
+
+---
+
+## Availability data
+
+Availability is driven by a simple `events.json` file containing busy time intervals (ISO timestamps, Dubai timezone).
+
+The file is currently generated from Apple Calendar via an Apple Shortcut and committed to this repo. The app fetches it directly.
+
+---
+
+## Running locally
+
+```bash
+npm install
 npm run dev
-
-# or start the server and open the app in a new browser tab
-npm run dev -- --open
-```
-
-## Building
-
-To create a production version of your app:
-
-```sh
-npm run build
-```
-
-You can preview the production build with `npm run preview`.
-
-> To deploy your app, you may need to install an [adapter](https://svelte.dev/docs/kit/adapters) for your target environment.
