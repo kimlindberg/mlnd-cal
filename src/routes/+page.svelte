@@ -13,7 +13,7 @@
 <div class="mx-auto max-w-5xl px-4 py-8 space-y-4">
 	<!-- Page header -->
 	<div class="space-y-1">
-		<h1 class="text-3xl font-semibold tracking-tight">m.lnd_</h1>
+		<h1 class="text-3xl font-semibold tracking-tight">m.lnd_ calendar</h1>
 		<p class="text-sm text-muted-foreground">
 			Personal training availability. Click anywere in the calendar to request a session.
 		</p>
