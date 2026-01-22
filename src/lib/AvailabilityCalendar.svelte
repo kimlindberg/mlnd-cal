@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { onDestroy, onMount } from 'svelte';
 	import { ScheduleXCalendar } from '@schedule-x/svelte';
-	import { createCalendar, viewDay, viewWeek } from '@schedule-x/calendar';
+	import { createCalendar, viewWeek } from '@schedule-x/calendar';
 	import { createCalendarControlsPlugin } from '@schedule-x/calendar-controls';
 	import '@schedule-x/theme-shadcn/dist/index.css';
 	import 'temporal-polyfill/global';
@@ -72,7 +72,7 @@
 			calendarControls = createCalendarControlsPlugin();
 			calendarApp = createCalendar(
 				{
-					views: [viewDay, viewWeek],
+					views: [viewWeek],
 					theme: 'shadcn',
 					timezone: TIMEZONE,
 					dayBoundaries: { start: DAY_START, end: DAY_END },
