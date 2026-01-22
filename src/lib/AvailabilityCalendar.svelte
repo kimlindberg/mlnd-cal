@@ -17,7 +17,7 @@
 
 	// Configuration constants
 	const TIMEZONE = 'Asia/Dubai';
-	const EVENTS_URL = '/events.json';
+	const EVENTS_URL = 'https://raw.githubusercontent.com/kimlindberg/mlnd-cal/refs/heads/master/events.json?t=' + Date.now();
 	const DAY_START = '05:00';
 	const DAY_END = '16:00';
 	const WEEK_GRID_HEIGHT = 420;
