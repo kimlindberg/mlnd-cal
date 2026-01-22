@@ -27,7 +27,7 @@
 		<CardHeader class="pb-3">
 			<CardTitle>Working hours</CardTitle>
 			<CardDescription>
-				This calendar shows my availability during working hours only.
+				This calendar shows my availability during working hours only, for booking - please get in touch via WhatsApp.
 			</CardDescription>
 		</CardHeader>
 
