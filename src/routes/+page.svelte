@@ -48,13 +48,8 @@
         <div class="space-y-1">
           <CardTitle class="text-2xl sm:text-3xl tracking-tight">m.lnd_</CardTitle>
           <CardDescription>
-            Dubai time · Week view on desktop, list view on small screens
+            Showing availability for personal training sessions in Dubai.
           </CardDescription>
-        </div>
-
-        <div class="flex gap-2">
-          <Badge variant="secondary">Read-only</Badge>
-          <Badge>POC</Badge>
         </div>
       </div>
 
