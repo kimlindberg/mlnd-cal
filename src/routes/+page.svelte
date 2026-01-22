@@ -1,14 +1,5 @@
 <script lang="ts">
 	import AvailabilityCalendar from '$lib/AvailabilityCalendar.svelte';
-
-	import {
-		Card,
-		CardContent,
-		CardDescription,
-		CardHeader,
-		CardTitle
-	} from '$lib/components/ui/card';
-
 	import { Badge } from '$lib/components/ui/badge';
 	import { Separator } from '$lib/components/ui/separator';
 	import { MessageCircle, ExternalLink } from '@lucide/svelte';
@@ -23,7 +14,7 @@
 	<div class="space-y-1">
 		<h1 class="text-3xl font-semibold tracking-tight">m.lnd_</h1>
 		<p class="text-sm text-muted-foreground">
-			Personal training availability
+			Personal training availability. Click anywere in the calendar to request a session.
 		</p>
 	</div>
 
@@ -43,7 +34,7 @@
 		>
 			<Badge class="flex items-center gap-1 cursor-pointer hover:opacity-90">
 				<MessageCircle size={14} />
-				<span>WhatsApp to book</span>
+				<span>WhatsApp</span>
 				<ExternalLink size={13} class="opacity-80" />
 			</Badge>
 		</a>
