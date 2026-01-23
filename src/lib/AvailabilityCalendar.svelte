@@ -36,7 +36,7 @@
 	// ========== Configuration constants ==========
 	const TIMEZONE = 'Asia/Dubai';
 	const EVENTS_URL_BASE =
-		'https://raw.githubusercontent.com/kimlindberg/mlnd-cal/refs/heads/master/events.json';
+		'https://raw.githubusercontent.com/kimlindberg/mlnd-cal/refs/heads/main/events.json';
 
 	const DAY_START = '05:00';
 	const DAY_END = '16:00';
