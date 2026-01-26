@@ -15,7 +15,7 @@
 	<div class="space-y-1">
 		<h1 class="text-3xl font-semibold tracking-tight">m.lnd_ calendar</h1>
 		<p class="text-sm text-muted-foreground">
-			Personal training availability. Click anywere in the calendar to request a session.
+			Personal training availability. Click anywhere in the calendar to request a session.
 		</p>
 	</div>
 
