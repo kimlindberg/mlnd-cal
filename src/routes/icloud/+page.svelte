@@ -1,7 +1,8 @@
 <script lang="ts">
-	import { tick } from 'svelte';
+	import { onMount } from 'svelte';
 	import { Check, ChevronsUpDown, X } from '@lucide/svelte';
 	import { Badge } from '$lib/components/ui/badge';
+	import { Separator } from '$lib/components/ui/separator';
 	import { Button } from '$lib/components/ui/button';
 	import * as Command from '$lib/components/ui/command';
 	import * as Popover from '$lib/components/ui/popover';
@@ -21,7 +22,10 @@
 
 	let open = $state(false);
 	let selected = $state<string[]>([]);
-	let triggerRef = $state<HTMLButtonElement>(null!);
+	let loadError = $state<string | null>(null);
+	let saveError = $state<string | null>(null);
+	let saveState = $state<'idle' | 'saving' | 'saved'>('idle');
+	let isLoading = $state(false);
 
 	const selectedCalendars = $derived(
 		calendars.filter((calendar) => selected.includes(calendar.url))
@@ -41,39 +45,72 @@
 			: [...selected, value];
 	}
 
-	function closeAndFocusTrigger() {
-		open = false;
-		tick().then(() => {
-			triggerRef?.focus();
-		});
+
+	async function loadSelection() {
+		isLoading = true;
+		loadError = null;
+		try {
+			const response = await fetch('/api/icloud-selection');
+			if (!response.ok) {
+				loadError = 'Unable to load saved calendar selection.';
+				return;
+			}
+			const payload = await response.json();
+			const valid = new Set(calendars.map((calendar) => calendar.url));
+			selected = Array.isArray(payload?.result)
+				? payload.result.filter((value: unknown) => typeof value === 'string' && valid.has(value))
+				: [];
+		} catch {
+			loadError = 'Unable to load saved calendar selection.';
+		} finally {
+			isLoading = false;
+		}
 	}
+
+	async function saveSelection() {
+		saveState = 'saving';
+		saveError = null;
+		try {
+			const response = await fetch('/api/icloud-selection', {
+				method: 'POST',
+				headers: {
+					'content-type': 'application/json'
+				},
+				body: JSON.stringify({ selection: selected })
+			});
+			if (!response.ok) {
+				saveError = 'Unable to save selection.';
+				saveState = 'idle';
+				return;
+			}
+			saveState = 'saved';
+		} catch {
+			saveError = 'Unable to save selection.';
+			saveState = 'idle';
+		}
+	}
+
+	onMount(() => {
+		loadSelection();
+	});
+
+	$effect(() => {
+		if (saveState !== 'saved') return;
+		const timeout = setTimeout(() => {
+			saveState = 'idle';
+		}, 2000);
+		return () => clearTimeout(timeout);
+	});
 </script>
 
 <div class="mx-auto max-w-4xl px-4 py-10 space-y-8">
 	<header class="space-y-3">
 		<h1 class="text-3xl font-semibold tracking-tight">iCloud calendars</h1>
-		<p class="text-sm text-muted-foreground">
-			Calendars are fetched server-side using credentials stored in Vercel environment variables.
-		</p>
 	</header>
+	<Separator />
 
-	<section class="rounded-2xl border bg-card p-6 shadow-sm space-y-4">
-		<div class="flex flex-wrap items-center gap-2">
-			<Badge variant="secondary" class="cursor-default">
-				Uses server-side environment variables
-			</Badge>
-			<Badge variant="secondary" class="cursor-default">
-				PRIVATE_ICLOUD_USERNAME
-			</Badge>
-			<Badge variant="secondary" class="cursor-default">
-				PRIVATE_ICLOUD_PASSWORD
-			</Badge>
-		</div>
-		<p class="text-sm text-muted-foreground">
-			Set
-			<code class="rounded bg-muted px-1 py-0.5 text-xs">PRIVATE_ICLOUD_SERVER_URL</code>
-			if you need a custom CalDAV endpoint.
-		</p>
+	<section class="space-y-4">
+		<h2 class="text-lg font-semibold">Choose calendars</h2>
 		{#if data?.error}
 			<p class="text-sm text-destructive">
 				{data.error}
@@ -82,61 +119,82 @@
 				{/if}
 			</p>
 		{/if}
-	</section>
+		<div class="flex flex-wrap items-center gap-3">
+			<Popover.Root bind:open>
+				<Popover.Trigger>
+					{#snippet child({ props })}
+						<Button
+							{...props}
+							variant="outline"
+							class="w-full justify-between sm:w-[320px]"
+							role="combobox"
+							aria-expanded={open}
+							disabled={calendars.length === 0}
+						>
+							{buttonLabel}
+							<ChevronsUpDown class="ms-2 size-4 shrink-0 opacity-50" />
+						</Button>
+					{/snippet}
+				</Popover.Trigger>
+				<Popover.Content class="w-full p-0 sm:w-[320px]">
+					<Command.Root>
+						<Command.Input placeholder="Search calendars..." />
+						<Command.List>
+							<Command.Empty>No calendar found.</Command.Empty>
+							<Command.Group>
+								{#each calendars as calendar (calendar.url)}
+									<Command.Item
+										value={calendar.url}
+										onSelect={() => {
+											toggleValue(calendar.url);
+										}}
+									>
+										<Check
+											class={cn(
+												"me-2 size-4",
+												selected.includes(calendar.url)
+													? "opacity-100"
+													: "opacity-0"
+											)}
+										/>
+										{#if calendar.color}
+											<span
+												class="me-2 h-2.5 w-2.5 rounded-full"
+												style={`background:${calendar.color}`}
+											></span>
+										{/if}
+										{calendar.displayName}
+									</Command.Item>
+								{/each}
+							</Command.Group>
+						</Command.List>
+					</Command.Root>
+				</Popover.Content>
+			</Popover.Root>
 
-	<section class="space-y-4">
-		<h2 class="text-lg font-semibold">Choose calendars</h2>
-		<Popover.Root bind:open>
-			<Popover.Trigger bind:ref={triggerRef}>
-				{#snippet child({ props })}
-					<Button
-						{...props}
-						variant="outline"
-						class="w-full justify-between sm:w-[320px]"
-						role="combobox"
-						aria-expanded={open}
-						disabled={calendars.length === 0}
-					>
-						{buttonLabel}
-						<ChevronsUpDown class="ms-2 size-4 shrink-0 opacity-50" />
-					</Button>
-				{/snippet}
-			</Popover.Trigger>
-			<Popover.Content class="w-full p-0 sm:w-[320px]">
-				<Command.Root>
-					<Command.Input placeholder="Search calendars..." />
-					<Command.List>
-						<Command.Empty>No calendar found.</Command.Empty>
-						<Command.Group>
-							{#each calendars as calendar (calendar.url)}
-								<Command.Item
-									value={calendar.url}
-									onSelect={() => {
-										toggleValue(calendar.url);
-									}}
-								>
-									<Check
-										class={cn(
-											"me-2 size-4",
-											selected.includes(calendar.url)
-												? "opacity-100"
-												: "opacity-0"
-										)}
-									/>
-									{#if calendar.color}
-										<span
-											class="me-2 h-2.5 w-2.5 rounded-full"
-											style={`background:${calendar.color}`}
-										></span>
-									{/if}
-									{calendar.displayName}
-								</Command.Item>
-							{/each}
-						</Command.Group>
-					</Command.List>
-				</Command.Root>
-			</Popover.Content>
-		</Popover.Root>
+			<Button
+				variant="default"
+				size="sm"
+				class="bg-primary text-primary-foreground hover:bg-primary/90"
+				onclick={saveSelection}
+				disabled={calendars.length === 0 || saveState === 'saving'}
+			>
+				{saveState === 'saving' ? 'Saving...' : 'Save selection'}
+			</Button>
+
+			{#if saveState === 'saved'}
+				<span class="text-xs text-muted-foreground">Saved</span>
+			{/if}
+			{#if isLoading}
+				<span class="text-xs text-muted-foreground">Loading saved selection...</span>
+			{/if}
+			{#if loadError}
+				<span class="text-xs text-destructive">{loadError}</span>
+			{/if}
+			{#if saveError}
+				<span class="text-xs text-destructive">{saveError}</span>
+			{/if}
+		</div>
 
 		<div class="flex flex-wrap gap-2">
 			{#if selectedCalendars.length === 0}
@@ -161,13 +219,6 @@
 						</button>
 					</Badge>
 				{/each}
-				<button
-					type="button"
-					class="text-xs text-muted-foreground underline-offset-4 hover:underline"
-					onclick={closeAndFocusTrigger}
-				>
-					Close
-				</button>
 			{/if}
 		</div>
 	</section>
