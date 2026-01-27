@@ -8,6 +8,8 @@ const redis = new Redis({
 });
 
 const STORAGE_KEY = 'icloud:selectedCalendars';
+const CACHE_KEY = 'icloud:selectedCalendars:cache';
+const CACHE_TTL_SECONDS = 600;
 const DEFAULT_WORK_START = '06:00';
 const DEFAULT_WORK_END = '15:00';
 const DEFAULT_BOOKED_TITLE = 'Booked';
@@ -59,28 +61,38 @@ export async function GET() {
 	const configError = ensureRedisConfigured();
 	if (configError) return configError;
 
+	const cached = await redis.get<SelectionPayload | null>(CACHE_KEY);
+	if (cached) {
+		return json(cached);
+	}
+
 	const result = await redis.get<SelectionPayload | string[] | null>(STORAGE_KEY);
 
 	if (Array.isArray(result)) {
-		return json({
+		const payload = {
 			selection: result.filter((item) => typeof item === 'string'),
 			workStart: DEFAULT_WORK_START,
 			workEnd: DEFAULT_WORK_END,
 			bookedTitle: DEFAULT_BOOKED_TITLE
-		});
+		};
+		await redis.set(CACHE_KEY, payload, { ex: CACHE_TTL_SECONDS });
+		return json(payload);
 	}
 
 	if (result && typeof result === 'object') {
 		const normalized = normalizePayload(result);
+		await redis.set(CACHE_KEY, normalized, { ex: CACHE_TTL_SECONDS });
 		return json(normalized);
 	}
 
-	return json({
+	const payload = {
 		selection: [],
 		workStart: DEFAULT_WORK_START,
 		workEnd: DEFAULT_WORK_END,
 		bookedTitle: DEFAULT_BOOKED_TITLE
-	});
+	};
+	await redis.set(CACHE_KEY, payload, { ex: CACHE_TTL_SECONDS });
+	return json(payload);
 }
 
 export async function POST({ request }: { request: Request }) {
@@ -97,6 +109,7 @@ export async function POST({ request }: { request: Request }) {
 	const normalized = normalizePayload(payload);
 
 	await redis.set(STORAGE_KEY, normalized);
+	await redis.set(CACHE_KEY, normalized, { ex: CACHE_TTL_SECONDS });
 
 	return json(normalized);
 }

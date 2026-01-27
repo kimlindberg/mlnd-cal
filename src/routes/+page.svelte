@@ -9,6 +9,12 @@
 	const whatsappUrl = buildWhatsAppUrl(
 		"Hi! I'd like to book a personal training session. Are you available?"
 	);
+
+	const { data } = $props();
+
+	const workStart = data?.workStart ?? '06:00';
+	const workEnd = data?.workEnd ?? '15:00';
+
 </script>
 
 <div class="mx-auto max-w-5xl px-4 py-8 space-y-4">
@@ -30,7 +36,7 @@
 	<div class="flex flex-wrap items-center gap-2">
 		<!-- Non-clickable info badge -->
 		<Badge variant="secondary" class="cursor-default select-none">
-			Working hours · 6:00 AM – 3:00 PM (Dubai time)
+			Working hours · {workStart} – {workEnd} (Dubai time)
 		</Badge>
 
 		<!-- Clickable WhatsApp badge -->
@@ -49,5 +55,5 @@
 	</div>
 
 	<!-- Calendar -->
-	<AvailabilityCalendar />	
+	<AvailabilityCalendar events={data?.events} />	
 </div>

@@ -5,7 +5,7 @@
 	import { createCalendarControlsPlugin } from '@schedule-x/calendar-controls';
 	import '@schedule-x/theme-shadcn/dist/index.css';
 	import 'temporal-polyfill/global';
-	import { loadAvailabilityEvents, type AvailabilityEvent } from '$lib/availability/events';
+	import type { AvailabilityEvent } from '$lib/availability/types';
 	import { LOOKAHEAD_WEEKS, TIMEZONE } from '$lib/availability/constants';
 
 	import {
@@ -22,6 +22,10 @@
 
 	// ========== Type definitions ==========
 	type CalendarApp = any;
+
+	let { events = [] } = $props<{ events?: AvailabilityEvent[] }>();
+
+	const isBrowser = typeof window !== 'undefined';
 
 	type PendingSlot = {
 		start: Temporal.ZonedDateTime;
@@ -41,14 +45,14 @@
 
 	// ========== State ==========
 
-	let calendarApp: CalendarApp | null = null;
-	let errorText: string | null = null;
+	let calendarApp = $state<CalendarApp | null>(null);
+	let errorText = $state<string | null>(null);
 	let themeMediaQuery: MediaQueryList | null = null;
 	let calendarControls: ReturnType<typeof createCalendarControlsPlugin> | null = null;
-	let busyInstants: Array<{ start: Temporal.Instant; end: Temporal.Instant }> = [];
-	let confirmOpen = false;
-	let pendingSlot: PendingSlot | null = null;
-	let isOnline = false;
+	let busyInstants = $state<Array<{ start: Temporal.Instant; end: Temporal.Instant }>>([]);
+	let confirmOpen = $state(false);
+	let pendingSlot = $state<PendingSlot | null>(null);
+	let isOnline = $state(false);
 
 	// ========== Time conversion & formatting ==========
 
@@ -197,11 +201,10 @@
 	// ========== Calendar initialization ==========
 	async function initializeCalendar(): Promise<void> {
 		try {
-			const rawEvents = await loadAvailabilityEvents();
-			const events = (rawEvents ?? []).map(normalizeEvent);
+			const normalizedEvents = (events ?? []).map(normalizeEvent);
 
 			// Cache busy time ranges for quick overlap checking
-			busyInstants = events.map((e: any) => ({
+			busyInstants = normalizedEvents.map((e: any) => ({
 				start: e.start.toInstant(),
 				end: e.end.toInstant()
 			}));
@@ -214,7 +217,7 @@
 					timezone: TIMEZONE,
 					dayBoundaries: { start: DAY_START, end: DAY_END },
 					weekOptions: { gridHeight: WEEK_GRID_HEIGHT, nDays: WEEK_DAYS },
-					events,
+					events: normalizedEvents,
 					callbacks: {
 						// @ts-ignore (types may lag; runtime works)
 						onClickDateTime(dateTime: Temporal.ZonedDateTime) {
@@ -243,6 +246,12 @@
 
 	// ========== Lifecycle ==========
 	onMount(initializeCalendar);
+
+	$effect(() => {
+		if (!isBrowser || calendarApp) return;
+		events;
+		initializeCalendar();
+	});
 
 	onDestroy(() => {
 		if (themeMediaQuery) {
