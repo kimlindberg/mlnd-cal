@@ -15,6 +15,7 @@
 		DialogTitle
 	} from '$lib/components/ui/dialog';
 	import { Button } from '$lib/components/ui/button';
+	import { Switch } from '$lib/components/ui/switch';
 	import { buildWhatsAppUrl } from '$lib/config';
 
 	// ========== Type definitions ==========
@@ -30,7 +31,6 @@
 	type PendingSlot = {
 		start: Temporal.ZonedDateTime;
 		end: Temporal.ZonedDateTime;
-		waUrl: string;
 	};
 
 	// ========== Configuration constants ==========
@@ -59,6 +59,7 @@
 	let busyInstants: Array<{ start: Temporal.Instant; end: Temporal.Instant }> = [];
 	let confirmOpen = false;
 	let pendingSlot: PendingSlot | null = null;
+	let isOnline = false;
 
 	// ========== Time conversion & formatting ==========
 
@@ -140,11 +141,15 @@
 	}
 
 	// ========== Slot request handling ==========
-	function buildSessionRequestUrl(start: Temporal.ZonedDateTime, end: Temporal.ZonedDateTime): string {
+	function buildSessionRequestUrl(
+		start: Temporal.ZonedDateTime,
+		end: Temporal.ZonedDateTime,
+		modeLabel: 'Live' | 'Online'
+	): string {
 		const date = start.toPlainDate().toString();
-		const msg = `Hi! I'd like to request a PT session on ${date}, ${format12h(start)}–${format12h(
-			end
-		)} (Dubai time). Is this slot available?`;
+		const msg = `Hi! I'd like to request a ${modeLabel} PT session on ${date}, ${format12h(
+			start
+		)}–${format12h(end)} (Dubai time). Is this slot available?`;
 		return buildWhatsAppUrl(msg);
 	}
 
@@ -169,15 +174,16 @@
 		// Show confirmation dialog
 		pendingSlot = {
 			start: slotStart,
-			end: slotEnd,
-			waUrl: buildSessionRequestUrl(slotStart, slotEnd)
+			end: slotEnd
 		};
 		confirmOpen = true;
 	}
 
 	function confirmSlot(): void {
 		if (pendingSlot) {
-			window.open(pendingSlot.waUrl, '_blank', 'noopener,noreferrer');
+			const modeLabel: 'Live' | 'Online' = isOnline ? 'Online' : 'Live';
+			const waUrl = buildSessionRequestUrl(pendingSlot.start, pendingSlot.end, modeLabel);
+			window.open(waUrl, '_blank', 'noopener,noreferrer');
 		}
 		closeDialog();
 	}
@@ -281,6 +287,12 @@
 				<div class="text-muted-foreground">
 					{format12h(pendingSlot.start)} – {format12h(pendingSlot.end)} (Dubai time)
 				</div>
+			</div>
+
+			<div class="mt-4 inline-flex items-center gap-3 text-sm">
+				<span class={isOnline ? 'text-muted-foreground' : 'font-medium'}>Live</span>
+				<Switch bind:checked={isOnline} aria-label="Session mode" />
+				<span class={isOnline ? 'font-medium' : 'text-muted-foreground'}>Online</span>
 			</div>
 		{/if}
 
