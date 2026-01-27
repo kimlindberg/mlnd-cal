@@ -1,5 +1,6 @@
 <script lang="ts">
 	import AvailabilityCalendar from '$lib/AvailabilityCalendar.svelte';
+	import { Avatar, AvatarFallback, AvatarImage } from '$lib/components/ui/avatar';
 	import { Badge } from '$lib/components/ui/badge';
 	import { Separator } from '$lib/components/ui/separator';
 	import { MessageCircle, ExternalLink } from '@lucide/svelte';
@@ -12,11 +13,17 @@
 
 <div class="mx-auto max-w-5xl px-4 py-8 space-y-4">
 	<!-- Page header -->
-	<div class="space-y-1">
-		<h1 class="text-3xl font-semibold tracking-tight">m.lnd_ calendar</h1>
-		<p class="text-sm text-muted-foreground">
-			Personal training availability. Click anywhere in the calendar to request a session.
-		</p>
+	<div class="flex items-center gap-3">
+		<Avatar class="h-12 w-12">
+			<AvatarImage src="/avatar.png" alt="m.lnd_ avatar" />
+			<AvatarFallback>ML</AvatarFallback>
+		</Avatar>
+		<div class="space-y-1">
+			<h1 class="text-3xl font-semibold tracking-tight">m.lnd_ calendar</h1>
+			<p class="text-sm text-muted-foreground">
+				Personal training availability. Click anywhere in the calendar to request a session.
+			</p>
+		</div>
 	</div>
 
 	<!-- Calendar meta row -->
@@ -40,8 +47,6 @@
 			</Badge>
 		</a>
 	</div>
-
-	<Separator />
 
 	<!-- Calendar -->
 	<div class="rounded-lg border bg-background p-2">
