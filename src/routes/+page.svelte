@@ -49,7 +49,5 @@
 	</div>
 
 	<!-- Calendar -->
-	<div class="rounded-lg border bg-background p-2">
-		<AvailabilityCalendar />
-	</div>
+	<AvailabilityCalendar />	
 </div>
