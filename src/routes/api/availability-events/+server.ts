@@ -13,9 +13,11 @@ import {
 import { TIMEZONE, LOOKAHEAD_WEEKS } from '$lib/availability/constants';
 const DEFAULT_ICLOUD_CALDAV_URL = 'https://caldav.icloud.com';
 const STORAGE_KEY = 'icloud:selectedCalendars';
-const WORK_START_HOUR = 6;
-const WORK_END_HOUR = 15;
+const DEFAULT_WORK_START = '06:00';
+const DEFAULT_WORK_END = '15:00';
 const DEFAULT_EVENT_TITLE = 'Booked';
+const CACHE_TTL_SECONDS = 600;
+const CACHE_PREFIX = 'availability:events:';
 
 const redis = new Redis({
 	url: KV_REST_API_URL || '',
@@ -27,6 +29,13 @@ type AvailabilityEvent = {
 	end: string;
 	title?: string;
 	id?: string;
+};
+
+type SelectionConfig = {
+	selection: string[];
+	workStart: string;
+	workEnd: string;
+	bookedTitle: string;
 };
 
 function ensureConfig() {
@@ -108,15 +117,23 @@ function formatOutput(zdt: Temporal.ZonedDateTime): string {
 	return zdt.toString().split('[')[0];
 }
 
-function isBeforeWorkStart(zdt: Temporal.ZonedDateTime): boolean {
-	return zdt.hour < WORK_START_HOUR;
+function parseTimeToMinutes(value: string, fallback: string): number {
+	const match = value.match(/^(\d{2}):(\d{2})$/);
+	if (!match) {
+		return parseTimeToMinutes(fallback, fallback);
+	}
+	const [, h, m] = match;
+	return Number(h) * 60 + Number(m);
 }
 
-function isAfterWorkEnd(zdt: Temporal.ZonedDateTime): boolean {
-	return zdt.hour >= WORK_END_HOUR;
+function timeToMinutes(zdt: Temporal.ZonedDateTime): number {
+	return zdt.hour * 60 + zdt.minute;
 }
 
-function parseEventsFromIcs(ics: string): AvailabilityEvent[] {
+function parseEventsFromIcs(
+	ics: string,
+	config: { workStartMinutes: number; workEndMinutes: number; bookedTitle: string }
+): AvailabilityEvent[] {
 	const events: AvailabilityEvent[] = [];
 	const lines = unfoldLines(ics);
 	let current: {
@@ -147,11 +164,13 @@ function parseEventsFromIcs(ics: string): AvailabilityEvent[] {
 				if (end && !current.isAllDay) {
 					const startInTz = current.start.withTimeZone(TIMEZONE);
 					const endInTz = end.withTimeZone(TIMEZONE);
-					if (!isBeforeWorkStart(endInTz) && !isAfterWorkEnd(startInTz)) {
+					const startMinutes = timeToMinutes(startInTz);
+					const endMinutes = timeToMinutes(endInTz);
+					if (endMinutes > config.workStartMinutes && startMinutes < config.workEndMinutes) {
 						events.push({
 							start: formatOutput(startInTz),
 							end: formatOutput(endInTz),
-							title: DEFAULT_EVENT_TITLE,
+							title: config.bookedTitle,
 							id: current.id
 						});
 					}
@@ -219,13 +238,50 @@ export async function GET() {
 	const configError = ensureConfig();
 	if (configError) return configError;
 
-	const selected = await redis.get<string[] | null>(STORAGE_KEY);
-	const selectedIds = Array.isArray(selected)
-		? selected.filter((item) => typeof item === 'string')
-		: [];
+	const stored = await redis.get<SelectionConfig | string[] | null>(STORAGE_KEY);
+	const selectionPayload: SelectionConfig = Array.isArray(stored)
+		? {
+				selection: stored.filter((item) => typeof item === 'string'),
+				workStart: DEFAULT_WORK_START,
+				workEnd: DEFAULT_WORK_END,
+				bookedTitle: DEFAULT_EVENT_TITLE
+			}
+		: stored && typeof stored === 'object'
+			? {
+					selection: Array.isArray((stored as any).selection)
+						? (stored as any).selection.filter((item: unknown) => typeof item === 'string')
+						: [],
+					workStart: typeof (stored as any).workStart === 'string'
+						? (stored as any).workStart
+						: DEFAULT_WORK_START,
+					workEnd: typeof (stored as any).workEnd === 'string'
+						? (stored as any).workEnd
+						: DEFAULT_WORK_END,
+					bookedTitle:
+						typeof (stored as any).bookedTitle === 'string' && (stored as any).bookedTitle.trim()
+							? (stored as any).bookedTitle.trim()
+							: DEFAULT_EVENT_TITLE
+				}
+			: {
+					selection: [],
+					workStart: DEFAULT_WORK_START,
+					workEnd: DEFAULT_WORK_END,
+					bookedTitle: DEFAULT_EVENT_TITLE
+				};
+
+	const selectedIds = selectionPayload.selection;
+	const workStartMinutes = parseTimeToMinutes(selectionPayload.workStart, DEFAULT_WORK_START);
+	const workEndMinutes = parseTimeToMinutes(selectionPayload.workEnd, DEFAULT_WORK_END);
+	const bookedTitle = selectionPayload.bookedTitle || DEFAULT_EVENT_TITLE;
 
 	if (selectedIds.length === 0) {
 		return json({ events: [] });
+	}
+
+	const cacheKey = `${CACHE_PREFIX}${selectedIds.join('|')}|${selectionPayload.workStart}|${selectionPayload.workEnd}|${bookedTitle}`;
+	const cached = await redis.get<AvailabilityEvent[] | null>(cacheKey);
+	if (Array.isArray(cached)) {
+		return json({ events: cached, cached: true });
 	}
 
 	const client = new DAVClient({
@@ -266,11 +322,21 @@ export async function GET() {
 
 			return objects
 				.map((obj) => (typeof obj.data === 'string' ? obj.data : ''))
-				.flatMap((ics) => (ics ? parseEventsFromIcs(ics) : []));
+				.flatMap((ics) =>
+					ics
+						? parseEventsFromIcs(ics, {
+								workStartMinutes,
+								workEndMinutes,
+								bookedTitle
+							})
+						: []
+				);
 		})
 	);
 
 	const events = eventLists.flat();
+
+	await redis.set(cacheKey, events, { ex: CACHE_TTL_SECONDS });
 
 	return json({ events });
 }

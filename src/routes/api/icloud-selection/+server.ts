@@ -8,6 +8,16 @@ const redis = new Redis({
 });
 
 const STORAGE_KEY = 'icloud:selectedCalendars';
+const DEFAULT_WORK_START = '06:00';
+const DEFAULT_WORK_END = '15:00';
+const DEFAULT_BOOKED_TITLE = 'Booked';
+
+type SelectionPayload = {
+	selection: string[];
+	workStart: string;
+	workEnd: string;
+	bookedTitle: string;
+};
 
 function ensureRedisConfigured() {
 	if (!KV_REST_API_URL || !KV_REST_API_TOKEN) {
@@ -21,14 +31,56 @@ function ensureRedisConfigured() {
 	return null;
 }
 
+function isValidTime(value: unknown): value is string {
+	return typeof value === 'string' && /^\d{2}:\d{2}$/.test(value);
+}
+
+function normalizePayload(payload: unknown): SelectionPayload {
+	const selection =
+		payload && typeof payload === 'object' && Array.isArray((payload as any).selection)
+			? (payload as any).selection.filter((item: unknown) => typeof item === 'string')
+			: [];
+
+	const workStart = isValidTime((payload as any)?.workStart)
+		? (payload as any).workStart
+		: DEFAULT_WORK_START;
+	const workEnd = isValidTime((payload as any)?.workEnd)
+		? (payload as any).workEnd
+		: DEFAULT_WORK_END;
+	const bookedTitle =
+		typeof (payload as any)?.bookedTitle === 'string' && (payload as any).bookedTitle.trim()
+			? (payload as any).bookedTitle.trim()
+			: DEFAULT_BOOKED_TITLE;
+
+	return { selection, workStart, workEnd, bookedTitle };
+}
+
 export async function GET() {
 	const configError = ensureRedisConfigured();
 	if (configError) return configError;
 
-	const result = await redis.get<string[] | null>(STORAGE_KEY);
-	const selection = Array.isArray(result) ? result.filter((item) => typeof item === 'string') : [];
+	const result = await redis.get<SelectionPayload | string[] | null>(STORAGE_KEY);
 
-	return json({ result: selection });
+	if (Array.isArray(result)) {
+		return json({
+			selection: result.filter((item) => typeof item === 'string'),
+			workStart: DEFAULT_WORK_START,
+			workEnd: DEFAULT_WORK_END,
+			bookedTitle: DEFAULT_BOOKED_TITLE
+		});
+	}
+
+	if (result && typeof result === 'object') {
+		const normalized = normalizePayload(result);
+		return json(normalized);
+	}
+
+	return json({
+		selection: [],
+		workStart: DEFAULT_WORK_START,
+		workEnd: DEFAULT_WORK_END,
+		bookedTitle: DEFAULT_BOOKED_TITLE
+	});
 }
 
 export async function POST({ request }: { request: Request }) {
@@ -42,12 +94,9 @@ export async function POST({ request }: { request: Request }) {
 		return json({ error: 'Invalid JSON payload.' }, { status: 400 });
 	}
 
-	const selection =
-		payload && typeof payload === 'object' && Array.isArray((payload as any).selection)
-			? (payload as any).selection.filter((item: unknown) => typeof item === 'string')
-			: [];
+	const normalized = normalizePayload(payload);
 
-	await redis.set(STORAGE_KEY, selection);
+	await redis.set(STORAGE_KEY, normalized);
 
-	return json({ result: selection });
+	return json(normalized);
 }
