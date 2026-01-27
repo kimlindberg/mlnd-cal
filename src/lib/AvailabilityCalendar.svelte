@@ -5,6 +5,8 @@
 	import { createCalendarControlsPlugin } from '@schedule-x/calendar-controls';
 	import '@schedule-x/theme-shadcn/dist/index.css';
 	import 'temporal-polyfill/global';
+	import { loadAvailabilityEvents, type AvailabilityEvent } from '$lib/availability/events';
+	import { LOOKAHEAD_WEEKS, TIMEZONE } from '$lib/availability/constants';
 
 	import {
 		Dialog,
@@ -19,13 +21,6 @@
 	import { buildWhatsAppUrl } from '$lib/config';
 
 	// ========== Type definitions ==========
-	type AvailabilityEvent = {
-		start: string;
-		end: string;
-		title?: string;
-		id?: string;
-	};
-
 	type CalendarApp = any;
 
 	type PendingSlot = {
@@ -34,16 +29,10 @@
 	};
 
 	// ========== Configuration constants ==========
-	const TIMEZONE = 'Asia/Dubai';
-	const EVENTS_URL_BASE =
-		'https://raw.githubusercontent.com/kimlindberg/mlnd-cal/refs/heads/main/events.json';
-
 	const DAY_START = '05:00';
 	const DAY_END = '16:00';
 	const WEEK_GRID_HEIGHT = 420;
 	const WEEK_DAYS = 5;
-	const LOOKAHEAD_WEEKS = 4;
-
 	const WORK_START_HOUR = 6; // 6:00 AM
 	const WORK_END_HOUR = 15; // 3:00 PM
 	const SLOT_DURATION_MINUTES = 60;
@@ -107,13 +96,6 @@
 			start: toDubaiZdt(event.start),
 			end: toDubaiZdt(event.end)
 		};
-	}
-
-	async function loadEvents(): Promise<AvailabilityEvent[]> {
-		const url = `${EVENTS_URL_BASE}?t=${Date.now()}`;
-		const res = await fetch(url, { cache: 'no-store' });
-		if (!res.ok) throw new Error(`Failed to load events (${res.status})`);
-		return res.json();
 	}
 
 	// ========== Availability validation ==========
@@ -215,7 +197,7 @@
 	// ========== Calendar initialization ==========
 	async function initializeCalendar(): Promise<void> {
 		try {
-			const rawEvents = await loadEvents();
+			const rawEvents = await loadAvailabilityEvents();
 			const events = (rawEvents ?? []).map(normalizeEvent);
 
 			// Cache busy time ranges for quick overlap checking
