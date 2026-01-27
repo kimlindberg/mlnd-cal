@@ -144,7 +144,7 @@
 	function buildSessionRequestUrl(
 		start: Temporal.ZonedDateTime,
 		end: Temporal.ZonedDateTime,
-		modeLabel: 'Live' | 'Online'
+		modeLabel: 'In-person' | 'Online'
 	): string {
 		const date = start.toPlainDate().toString();
 		const msg = `Hi! I'd like to request a ${modeLabel} PT session on ${date}, ${format12h(
@@ -181,7 +181,7 @@
 
 	function confirmSlot(): void {
 		if (pendingSlot) {
-			const modeLabel: 'Live' | 'Online' = isOnline ? 'Online' : 'Live';
+			const modeLabel: 'In-person' | 'Online' = isOnline ? 'Online' : 'In-person';
 			const waUrl = buildSessionRequestUrl(pendingSlot.start, pendingSlot.end, modeLabel);
 			window.open(waUrl, '_blank', 'noopener,noreferrer');
 		}
@@ -290,7 +290,7 @@
 			</div>
 
 			<div class="mt-4 inline-flex items-center gap-3 text-sm">
-				<span class={isOnline ? 'text-muted-foreground' : 'font-medium'}>Live</span>
+				<span class={isOnline ? 'text-muted-foreground' : 'font-medium'}>In-person</span>
 				<Switch bind:checked={isOnline} aria-label="Session mode" />
 				<span class={isOnline ? 'font-medium' : 'text-muted-foreground'}>Online</span>
 			</div>
