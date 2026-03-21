@@ -39,13 +39,13 @@
 		'https://raw.githubusercontent.com/kimlindberg/mlnd-cal/refs/heads/main/events.json';
 
 	const DAY_START = '05:00';
-	const DAY_END = '16:00';
+	const DAY_END = '19:00';
 	const WEEK_GRID_HEIGHT = 420;
 	const WEEK_DAYS = 5;
 	const LOOKAHEAD_WEEKS = 4;
 
 	const WORK_START_HOUR = 6; // 6:00 AM
-	const WORK_END_HOUR = 15; // 3:00 PM
+	const WORK_END_HOUR = 18; // 6:00 PM
 	const SLOT_DURATION_MINUTES = 60;
 
 	const THEME_QUERY = '(prefers-color-scheme: dark)';
@@ -130,7 +130,10 @@
 		return Temporal.Instant.compare(aStart, bEnd) < 0 && Temporal.Instant.compare(bStart, aEnd) < 0;
 	}
 
-	function isWithinWorkingHours(start: Temporal.ZonedDateTime, end: Temporal.ZonedDateTime): boolean {
+	function isWithinWorkingHours(
+		start: Temporal.ZonedDateTime,
+		end: Temporal.ZonedDateTime
+	): boolean {
 		const startValid = start.hour >= WORK_START_HOUR && start.hour < WORK_END_HOUR;
 		const endValid = end.hour < WORK_END_HOUR || (end.hour === WORK_END_HOUR && end.minute === 0);
 		return startValid && endValid;
@@ -274,9 +277,7 @@
 	<DialogContent>
 		<DialogHeader>
 			<DialogTitle>Request this time?</DialogTitle>
-			<DialogDescription>
-				We’ll open WhatsApp with a prefilled booking request.
-			</DialogDescription>
+			<DialogDescription>We’ll open WhatsApp with a prefilled booking request.</DialogDescription>
 		</DialogHeader>
 
 		{#if pendingSlot}
@@ -297,13 +298,9 @@
 		{/if}
 
 		<DialogFooter class="mt-4">
-			<Button variant="outline" onclick={closeDialog}>
-				Cancel
-			</Button>
+			<Button variant="outline" onclick={closeDialog}>Cancel</Button>
 
-			<Button onclick={confirmSlot}>
-				Request via WhatsApp
-			</Button>
+			<Button onclick={confirmSlot}>Request via WhatsApp</Button>
 		</DialogFooter>
 	</DialogContent>
 </Dialog>

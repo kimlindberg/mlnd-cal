@@ -30,7 +30,7 @@
 	<div class="flex flex-wrap items-center gap-2">
 		<!-- Non-clickable info badge -->
 		<Badge variant="secondary" class="cursor-default select-none">
-			Working hours · 6:00 AM – 3:00 PM (Dubai time)
+			Working hours · 6:00 AM – 6:00 PM (Dubai time)
 		</Badge>
 
 		<!-- Clickable WhatsApp badge -->
