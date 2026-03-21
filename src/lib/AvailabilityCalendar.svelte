@@ -41,7 +41,7 @@
 	const DAY_START = '05:00';
 	const DAY_END = '19:00';
 	const WEEK_GRID_HEIGHT = 420;
-	const WEEK_DAYS = 5;
+	const WEEK_DAYS = 7;
 	const LOOKAHEAD_WEEKS = 4;
 
 	const WORK_START_HOUR = 6; // 6:00 AM
@@ -117,10 +117,6 @@
 	}
 
 	// ========== Availability validation ==========
-	function isWeekday(date: Temporal.PlainDate): boolean {
-		return date.dayOfWeek >= 1 && date.dayOfWeek <= 5;
-	}
-
 	function overlaps(
 		aStart: Temporal.Instant,
 		aEnd: Temporal.Instant,
@@ -158,9 +154,6 @@
 
 	function requestSlotAt(zdt: Temporal.ZonedDateTime): void {
 		const dt = zdt.withTimeZone(TIMEZONE);
-
-		// Validate: weekday only
-		if (!isWeekday(dt.toPlainDate())) return;
 
 		// Snap to nearest 15 minutes and create a 60-minute slot
 		const slotStart = snapToNearestQuarter(dt);
